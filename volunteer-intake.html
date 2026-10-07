@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coffee Disciples — Join a Group</title>
+<style>
+  :root{
+    --bg:#2b2018; --bg2:#352718; --ink:#f3ead9; --ink-dim:#c9b89c;
+    --line:#4a3a27; --amber:#d9a441; --green:#7fae6f; --red:#c1604f;
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){ --bg:#f7f2e8; --bg2:#efe6d4; --ink:#2b2018; --ink-dim:#6b5a42; --line:#ddcdb0; }
+  }
+  *{box-sizing:border-box}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;min-height:100%;}
+  .wrap{max-width:560px;margin:0 auto;padding:2.5rem 1.25rem 4rem;}
+  h1{font-size:1.1rem;margin:0 0 .2rem;font-weight:600;}
+  .sub{color:var(--ink-dim);font-size:.82rem;margin:0 0 2rem;line-height:1.5;}
+  fieldset{border:1px solid var(--line);border-radius:4px;padding:1rem;margin:0 0 1.25rem;}
+  legend{color:var(--ink-dim);font-size:.72rem;padding:0 .4rem;}
+  label{display:block;font-size:.78rem;color:var(--ink-dim);margin:.7rem 0 .25rem;}
+  label.inline{display:inline-flex;align-items:center;gap:.4rem;color:var(--ink);font-size:.82rem;margin:.35rem 0;}
+  input,select,textarea{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--ink);padding:.5rem .6rem;border-radius:3px;font:inherit;font-size:.85rem;}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);outline-offset:1px;}
+  textarea{resize:vertical;min-height:4.5em;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;}
+  .slot{border:1px solid var(--line);border-radius:3px;padding:.7rem;margin-top:.6rem;}
+  .slot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;}
+  .slot-head span{font-size:.72rem;color:var(--ink-dim);}
+  button{font:inherit;cursor:pointer;border-radius:3px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);padding:.5rem .9rem;font-size:.82rem;}
+  button:hover{border-color:var(--amber);}
+  .add{font-size:.75rem;padding:.35rem .7rem;}
+  .remove{font-size:.72rem;padding:.3rem .6rem;border-color:var(--red);color:var(--red);}
+  .submit{background:var(--amber);color:#241a10;border-color:var(--amber);font-weight:600;width:100%;padding:.75rem;font-size:.9rem;margin-top:.5rem;}
+  .submit:disabled{opacity:.5;cursor:default;}
+  .msg{font-size:.82rem;margin-top:1rem;min-height:1.1em;}
+  .msg.err{color:var(--red);}
+  .msg.ok{color:var(--green);}
+  .done{text-align:center;padding:3rem 1rem;}
+  .done h2{font-size:1.1rem;margin-bottom:.6rem;}
+  .done p{color:var(--ink-dim);font-size:.85rem;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="form-view">
+    <h1>Join a Coffee Disciples Group</h1>
+    <p class="sub">This is a test round with a small group of volunteers — thank you for helping shape how group matching works before it opens up more broadly.</p>
+
+    <form id="intake">
+      <fieldset>
+        <legend>about you</legend>
+        <label for="first_name">First name</label>
+        <input id="first_name" required>
+        <label for="email">Email</label>
+        <input id="email" type="email" required>
+        <label for="gender">Gender</label>
+        <select id="gender" required>
+          <option value="">Select…</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Prefer not to say</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <legend>group preferences</legend>
+        <label>What kind of group interests you? (pick any that apply)</label>
+        <div id="group-types"></div>
+
+        <label for="gender_pref">Who would you like in your group?</label>
+        <select id="gender_pref">
+          <option value="no_preference">No preference</option>
+          <option value="same_gender">Same gender as me</option>
+          <option value="mixed">Mixed</option>
+        </select>
+
+        <div class="grid2">
+          <div>
+            <label for="size_min">Smallest group OK</label>
+            <input id="size_min" type="number" min="2" max="12" placeholder="e.g. 3">
+          </div>
+          <div>
+            <label for="size_max">Largest group OK</label>
+            <input id="size_max" type="number" min="2" max="12" placeholder="e.g. 6">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>availability</legend>
+        <label>When could you meet? Add one or more times.</label>
+        <div id="slots"></div>
+        <button type="button" class="add" onclick="addSlot()">+ Add another time</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>anything else</legend>
+        <label for="notes">Optional — context that might help with matching</label>
+        <textarea id="notes" placeholder="e.g. new to this, traveling a lot this fall, prefer evenings only…"></textarea>
+      </fieldset>
+
+      <button type="submit" class="submit" id="submitBtn">Submit</button>
+      <p id="msg" class="msg"></p>
+    </form>
+  </div>
+
+  <div id="done-view" class="done" style="display:none;">
+    <h2>Thanks!</h2>
+    <p>You're on the list. You'll hear from us once groups are put together.</p>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://ijparkhwmgcynixifxcu.supabase.co";
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlqcGFya2h3bWdjeW5peGlmeGN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjY0NjAsImV4cCI6MjEwNDU0MjQ2MH0.zy-DPKoAcvEBKAiGO8K08KLwdq7ozB3mSBqXooy_vAo";
+
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+let slotCount = 0;
+
+function addSlot(){
+  slotCount++;
+  const id = slotCount;
+  const div = document.createElement('div');
+  div.className = 'slot';
+  div.id = 'slot-' + id;
+  div.innerHTML = `
+    <div class="slot-head">
+      <span>Time ${id}</span>
+      ${id > 1 ? `<button type="button" class="remove" onclick="document.getElementById('slot-${id}').remove()">Remove</button>` : ''}
+    </div>
+    <div class="grid2">
+      <div>
+        <label>Day</label>
+        <select class="slot-day">${DAYS.map(d => `<option>${d}</option>`).join('')}</select>
+      </div>
+      <div>
+        <label>Frequency</label>
+        <select class="slot-freq">
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every other week</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>Start time</label>
+        <input type="time" class="slot-start" value="19:00">
+      </div>
+      <div>
+        <label>End time</label>
+        <input type="time" class="slot-end" value="20:00">
+      </div>
+    </div>
+  `;
+  document.getElementById('slots').appendChild(div);
+}
+addSlot();
+
+async function loadGroupTypes(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/group_types?select=id,name,description&active=eq.true`, {
+      headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY }
+    });
+    const types = await res.json();
+    const container = document.getElementById('group-types');
+    container.innerHTML = types.map(t => `
+      <label class="inline">
+        <input type="checkbox" class="type-checkbox" value="${t.id}">
+        ${t.name}${t.description ? ' — ' + t.description : ''}
+      </label>
+    `).join('');
+  }catch(e){
+    document.getElementById('group-types').innerHTML = '<p class="msg err">Could not load group types — refresh to try again.</p>';
+  }
+}
+loadGroupTypes();
+
+function setMsg(text, kind){
+  const m = document.getElementById('msg');
+  m.textContent = text || '';
+  m.className = 'msg' + (kind ? ' '+kind : '');
+}
+
+async function supaInsert(table, rows){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      apikey: ANON_KEY,
+      Authorization: 'Bearer ' + ANON_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(rows)
+  });
+  if(!res.ok){
+    let detail = '';
+    try{ detail = (await res.json()).message || ''; }catch(e){}
+    throw new Error(detail || `${table} insert failed (${res.status})`);
+  }
+}
+
+document.getElementById('intake').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  setMsg('Submitting…');
+
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const first_name = document.getElementById('first_name').value.trim();
+  const gender = document.getElementById('gender').value;
+
+  try{
+    await supaInsert('subscribers', [{ email, first_name, gender }]);
+
+    const slots = [...document.querySelectorAll('.slot')].map(s => ({
+      email,
+      day_of_week: s.querySelector('.slot-day').value,
+      start_time: s.querySelector('.slot-start').value,
+      end_time: s.querySelector('.slot-end').value,
+      frequency: s.querySelector('.slot-freq').value
+    }));
+    if(slots.length) await supaInsert('availability', slots);
+
+    const notes = document.getElementById('notes').value.trim();
+    await supaInsert('subscriber_preferences', [{
+      email,
+      gender_preference: document.getElementById('gender_pref').value,
+      preferred_group_size_min: document.getElementById('size_min').value || null,
+      preferred_group_size_max: document.getElementById('size_max').value || null,
+      extra: notes ? { notes } : {}
+    }]);
+
+    const typeIds = [...document.querySelectorAll('.type-checkbox:checked')].map(c => parseInt(c.value, 10));
+    if(typeIds.length){
+      await supaInsert('subscriber_group_type_interests', typeIds.map((id, idx) => ({
+        email, group_type_id: id, priority: idx + 1
+      })));
+    }
+
+    document.getElementById('form-view').style.display = 'none';
+    document.getElementById('done-view').style.display = 'block';
+  }catch(err){
+    setMsg(err.message.includes('duplicate') ? 'That email is already registered.' : err.message, 'err');
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
