@@ -76,6 +76,14 @@
   <div class="tabs">
     <div class="tab active" id="tab-queue" onclick="showTab('queue')">SQL Review</div>
     <div class="tab" id="tab-subs" onclick="showTab('subs')">Pending Volunteers</div>
+    <div class="tab" id="tab-groups" onclick="showTab('groups')">Groups</div>
+  </div>
+
+  <div id="panel-groups" class="panel">
+    <p class="sub" style="margin:0 0 1rem;">Groups created by <code>propose_groups()</code>. Promote a Pending group to Scheduled once you're happy with it, then send its facilitator link to whoever leads it.</p>
+    <div class="row refresh"><button onclick="loadGroups()">Refresh</button></div>
+    <p id="msgGroups" class="msg"></p>
+    <div id="listGroups"></div>
   </div>
 
   <div id="panel-queue" class="panel active">
@@ -123,11 +131,55 @@ function setMsg(text, kind, elId){
 }
 
 function showTab(name){
-  document.getElementById('tab-queue').classList.toggle('active', name==='queue');
-  document.getElementById('tab-subs').classList.toggle('active', name==='subs');
-  document.getElementById('panel-queue').classList.toggle('active', name==='queue');
-  document.getElementById('panel-subs').classList.toggle('active', name==='subs');
+  ['queue','subs','groups'].forEach(n => {
+    document.getElementById('tab-'+n).classList.toggle('active', n===name);
+    document.getElementById('panel-'+n).classList.toggle('active', n===name);
+  });
   if(name==='subs') loadSubs();
+  if(name==='groups') loadGroups();
+}
+
+const PORTAL_BASE = location.origin + '/facilitator.html?token=';
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function loadGroups(){
+  setMsg('Loading…', null, 'msgGroups');
+  const data = await call({ method: 'GET' }, 'groups', 'msgGroups');
+  if(!data) return;
+  setMsg('', null, 'msgGroups');
+  const list = document.getElementById('listGroups');
+  list.innerHTML = '';
+  if(!data.items || data.items.length === 0){
+    list.innerHTML = '<p class="empty">No groups yet. Run propose_groups() once volunteers are activated.</p>';
+    return;
+  }
+  data.items.forEach(g => {
+    const sched = [g.meeting_day, g.meeting_time ? g.meeting_time.slice(0,5) : '', g.meeting_frequency].filter(Boolean).join(' · ');
+    const link = PORTAL_BASE + g.facilitator_token;
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `
+      <div class="item-head">
+        <span class="id">${esc(g.type || 'Untyped group')} · ${esc(sched)}</span>
+        <span class="status ${g.status === 'Pending' ? 'pending' : g.status === 'Disbanded' ? 'rejected' : 'approved'}">${esc(g.status)}</span>
+      </div>
+      <div class="cmd">${g.members.map(esc).join(', ') || '(no members)'}</div>
+      <div class="decided" style="margin-bottom:.6rem;word-break:break-all;">Facilitator link: ${esc(link)}</div>
+      <div class="row">
+        <button onclick="navigator.clipboard.writeText('${esc(link)}')">Copy facilitator link</button>
+        ${g.status === 'Pending' ? `<button class="approve" onclick="setGroupStatus('${g.id}','Scheduled')">Promote to Scheduled</button>` : ''}
+        ${g.status !== 'Disbanded' ? `<button class="reject" onclick="if(confirm('Disband this group?')) setGroupStatus('${g.id}','Disbanded')">Disband</button>` : ''}
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+async function setGroupStatus(group_id, status){
+  setMsg('Working…', null, 'msgGroups');
+  const data = await call({ method: 'POST', body: JSON.stringify({ group_id, status }) }, 'groups', 'msgGroups');
+  if(!data) return;
+  setMsg(data.result || 'Done.', 'ok', 'msgGroups');
+  loadGroups();
 }
 
 async function call(opts, resource, msgEl){
